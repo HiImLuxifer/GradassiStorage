@@ -251,12 +251,8 @@ class PokeVault {
         // Export CSV
         document.getElementById('export-csv-btn')?.addEventListener('click', () => this.exportCSV());
 
-        // Load Demo
-        document.getElementById('load-demo-btn')?.addEventListener('click', () => this.loadDemoData());
-
         // Empty state buttons
         document.getElementById('empty-add-btn')?.addEventListener('click', () => this.navigateTo('wizard-sets'));
-        document.getElementById('empty-demo-btn')?.addEventListener('click', () => this.loadDemoData());
 
         // Wizard back button
         document.getElementById('wizard-back-btn')?.addEventListener('click', () => {
@@ -1302,139 +1298,6 @@ class PokeVault {
         this.toast('success', '📥', 'Inventario esportato in CSV!');
     }
 
-    // ══════════════════════════════════════════════
-    // DEMO DATA (Firestore batch write)
-    // ══════════════════════════════════════════════
-    async loadDemoData() {
-        const demoProducts = [
-            {
-                name: 'Booster Box Scarlet & Violet 151',
-                type: 'booster-box', expansion: 'Scarlet & Violet — 151',
-                language: 'ja', condition: 'sealed',
-                buyPrice: 130, sellPrice: 185, quantity: 4,
-                lowStockThreshold: 2, notes: 'Edizione giapponese, molto richiesta',
-            },
-            {
-                name: 'Elite Trainer Box Crown Zenith',
-                type: 'etb', expansion: 'Crown Zenith',
-                language: 'en', condition: 'sealed',
-                buyPrice: 55, sellPrice: 75, quantity: 6,
-                lowStockThreshold: 3, notes: '',
-            },
-            {
-                name: 'Display Ossidiana Infuocata',
-                type: 'display', expansion: 'Ossidiana Infuocata',
-                language: 'it', condition: 'sealed',
-                buyPrice: 140, sellPrice: 165, quantity: 2,
-                lowStockThreshold: 2, notes: 'Display da 36 buste',
-            },
-            {
-                name: 'Ultra Premium Collection Charizard',
-                type: 'upc', expansion: 'Sword & Shield',
-                language: 'en', condition: 'sealed',
-                buyPrice: 120, sellPrice: 210, quantity: 1,
-                lowStockThreshold: 1, notes: 'Pezzo da collezione, alto valore',
-            },
-            {
-                name: 'Booster Box Evolving Skies',
-                type: 'booster-box', expansion: 'Evolving Skies',
-                language: 'en', condition: 'sealed',
-                buyPrice: 350, sellPrice: 460, quantity: 2,
-                lowStockThreshold: 1, notes: 'Set molto ricercato, Eeveelutions',
-            },
-            {
-                name: 'Tin Destini di Paldea',
-                type: 'tin', expansion: 'Destini di Paldea',
-                language: 'it', condition: 'sealed',
-                buyPrice: 25, sellPrice: 35, quantity: 8,
-                lowStockThreshold: 3, notes: '',
-            },
-            {
-                name: 'Collection Box Paradox Rift',
-                type: 'collection-box', expansion: 'Paradox Rift',
-                language: 'en', condition: 'sealed',
-                buyPrice: 45, sellPrice: 55, quantity: 3,
-                lowStockThreshold: 2, notes: '',
-            },
-            {
-                name: 'Bundle Forze Temporali',
-                type: 'bundle', expansion: 'Forze Temporali',
-                language: 'it', condition: 'sealed',
-                buyPrice: 30, sellPrice: 42, quantity: 5,
-                lowStockThreshold: 2, notes: 'Include 6 buste + promo',
-            },
-            {
-                name: 'Booster Box Prismatic Evolutions',
-                type: 'booster-box', expansion: 'Prismatic Evolutions',
-                language: 'ja', condition: 'sealed',
-                buyPrice: 92, sellPrice: 135, quantity: 3,
-                lowStockThreshold: 2, notes: 'Set Eevee, edizione giapponese',
-            },
-            {
-                name: 'ETB Scintille Travolgenti',
-                type: 'etb', expansion: 'Scintille Travolgenti',
-                language: 'it', condition: 'sealed',
-                buyPrice: 45, sellPrice: 55, quantity: 7,
-                lowStockThreshold: 3, notes: '',
-            },
-            {
-                name: 'Premium Collection Celebrations',
-                type: 'premium-collection', expansion: 'Celebrations',
-                language: 'en', condition: 'sealed',
-                buyPrice: 80, sellPrice: 125, quantity: 1,
-                lowStockThreshold: 1, notes: '25° anniversario Pokémon',
-            },
-            {
-                name: 'Display Paldea Evolved',
-                type: 'display', expansion: 'Paldea Evolved',
-                language: 'en', condition: 'opened',
-                buyPrice: 135, sellPrice: null, quantity: 1,
-                lowStockThreshold: 1, notes: 'Aperta per vendita singole buste',
-            },
-            {
-                name: 'Booster Box Evoluzioni a Paldea',
-                type: 'booster-box', expansion: 'Evoluzioni a Paldea',
-                language: 'it', condition: 'sealed',
-                buyPrice: 125, sellPrice: 150, quantity: 3,
-                lowStockThreshold: 2, notes: '',
-            },
-            {
-                name: 'Mini Tin Scarlet & Violet',
-                type: 'mini-tin', expansion: 'Scarlet & Violet Base',
-                language: 'en', condition: 'sealed',
-                buyPrice: 8, sellPrice: 12, quantity: 15,
-                lowStockThreshold: 5, notes: 'Assortimento vari artwork',
-            },
-            {
-                name: 'Special Box Collezione Allenatore Fuoriclasse',
-                type: 'special-box', expansion: 'Destini di Paldea',
-                language: 'it', condition: 'damaged',
-                buyPrice: 50, sellPrice: 35, quantity: 1,
-                lowStockThreshold: 1, notes: 'Confezione leggermente danneggiata, sconto',
-            },
-        ];
-
-        try {
-            const batch = db.batch();
-            const now = new Date();
-
-            demoProducts.forEach((p, i) => {
-                const ref = db.collection(PRODUCTS_COLLECTION).doc();
-                const createdDate = new Date(now.getTime() - (i * 86400000 * Math.random() * 30));
-                batch.set(ref, {
-                    ...p,
-                    createdAt: createdDate.toISOString(),
-                    updatedAt: createdDate.toISOString(),
-                });
-            });
-
-            await batch.commit();
-            this.toast('success', '🎮', `${demoProducts.length} prodotti demo caricati nel cloud!`);
-        } catch (error) {
-            console.error('Error loading demo data:', error);
-            this.toast('error', '❌', 'Errore nel caricamento dei dati demo');
-        }
-    }
 
     // ══════════════════════════════════════════════
     // TOAST NOTIFICATIONS
