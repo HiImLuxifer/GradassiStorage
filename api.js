@@ -49,14 +49,24 @@ async function getModernSets() {
     if (id === 'svp' || id === 'sve' || id === 'mep' || id === 'mee') return true;
     
     // 30° Anniversario
-    if (id === '30th' || id === '30th-c') return true;
+    if (id === '30th') return true;
 
     // Set europei ufficiali: sv o me seguiti da numeri (e opzionalmente decimali, es. me02.5)
     // Questo scarta in automatico le versioni giapponesi/asiatiche (sv10.5b, B1a, A2, ecc.)
     return /^(sv|me)\d+(\.\d+)?$/.test(id);
   });
   // reverse so newest first
-  return modern.reverse();
+  const reversed = modern.reverse();
+  
+  // Add "Prodotto Personalizzato" at the very beginning
+  reversed.unshift({
+      id: 'custom',
+      name: 'Prodotto Personalizzato',
+      logo: 'https://ui-avatars.com/api/?name=Personalizzato&background=23477d&color=fff&font-size=0.33', // Or any placeholder logo
+      cardCount: { official: '∞', total: '∞' }
+  });
+  
+  return reversed;
 }
 
 /** Format EUR price */

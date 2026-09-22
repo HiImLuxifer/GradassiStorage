@@ -569,7 +569,12 @@ class PokeVault {
             card.addEventListener('click', () => {
                 const setId = card.dataset.set;
                 const setObj = this.cachedSets.find(s => s.id === setId);
-                this.renderWizardSealed(setObj);
+                
+                if (setId === 'custom') {
+                    this.openAddProductFromWizard(setObj, '', null);
+                } else {
+                    this.renderWizardSealed(setObj);
+                }
             });
         });
     }
@@ -678,8 +683,6 @@ class PokeVault {
         const products = this.products;
         const totalQty = products.reduce((s, p) => s + p.quantity, 0);
         const totalValue = products.reduce((s, p) => s + (p.buyPrice * p.quantity), 0);
-        const totalSellValue = products.reduce((s, p) => s + ((p.sellPrice || 0) * p.quantity), 0);
-        const lowStockProducts = products.filter(p => p.quantity > 0 && p.quantity <= (p.lowStockThreshold || 2));
         const uniqueCount = products.length;
 
         const kpiGrid = document.getElementById('kpi-grid');
@@ -692,29 +695,13 @@ class PokeVault {
                 <div class="kpi-value">${totalQty.toLocaleString('it-IT')}</div>
                 <div class="kpi-sub">${uniqueCount} prodott${uniqueCount === 1 ? 'o' : 'i'} unic${uniqueCount === 1 ? 'o' : 'i'}</div>
             </div>
-            <div class="kpi-card blue">
+            <div class="kpi-card green" style="grid-column: span 2;">
                 <div class="kpi-header">
                     <span class="kpi-label">Valore Magazzino</span>
                     <div class="kpi-icon">💰</div>
                 </div>
                 <div class="kpi-value">${formatCurrency(totalValue)}</div>
-                <div class="kpi-sub">Costo di acquisto</div>
-            </div>
-            <div class="kpi-card green">
-                <div class="kpi-header">
-                    <span class="kpi-label">Valore di Vendita</span>
-                    <div class="kpi-icon">📈</div>
-                </div>
-                <div class="kpi-value">${formatCurrency(totalSellValue)}</div>
-                <div class="kpi-sub">Potenziale di ricavo</div>
-            </div>
-            <div class="kpi-card red">
-                <div class="kpi-header">
-                    <span class="kpi-label">Scorte Basse</span>
-                    <div class="kpi-icon">⚠️</div>
-                </div>
-                <div class="kpi-value">${lowStockProducts.length}</div>
-                <div class="kpi-sub">Prodott${lowStockProducts.length === 1 ? 'o' : 'i'} sotto soglia</div>
+                <div class="kpi-sub">Costo totale di acquisto</div>
             </div>
         `;
 
@@ -739,25 +726,6 @@ class PokeVault {
             }).join('');
         }
 
-        // Low Stock
-        const lowStockList = document.getElementById('low-stock-list');
-        if (lowStockProducts.length === 0) {
-            lowStockList.innerHTML = '<div class="empty-list-msg">✅ Nessun prodotto in esaurimento</div>';
-        } else {
-            lowStockList.innerHTML = lowStockProducts.map(p => {
-                const type = getTypeInfo(p.type);
-                return `
-                    <div class="recent-item" data-id="${p.id}" onclick="app.openEditModal('${p.id}')" style="cursor:pointer">
-                        <div class="recent-item-icon" style="background:var(--color-warning-dim)">${type.icon}</div>
-                        <div class="recent-item-info">
-                            <div class="recent-item-name">${this.escapeHtml(p.name)}</div>
-                            <div class="recent-item-meta">Soglia: ${p.lowStockThreshold || 2}</div>
-                        </div>
-                        <div class="recent-item-qty" style="color:var(--color-warning)">×${p.quantity}</div>
-                    </div>
-                `;
-            }).join('');
-        }
     }
 
     // ══════════════════════════════════════════════
@@ -769,10 +737,9 @@ class PokeVault {
         // Search
         const search = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
         if (search) {
-            filtered = filtered.filter(p =>
-                p.name.toLowerCase().includes(search) ||
-                (p.expansion || '').toLowerCase().includes(search) ||
-                getTypeInfo(p.type).label.toLowerCase().includes(search)
+            filtered = filtered.filter(p => 
+                p.name.toLowerCase().includes(search) || 
+                (p.expansion && p.expansion.toLowerCase().includes(search))
             );
         }
 
@@ -828,8 +795,6 @@ class PokeVault {
             const type = getTypeInfo(p.type);
             const lang = getLangInfo(p.language);
             const cond = getConditionInfo(p.condition);
-            const isLowStock = p.quantity > 0 && p.quantity <= (p.lowStockThreshold || 2);
-            const profit = p.sellPrice ? (p.sellPrice - p.buyPrice) : null;
 
             // Try to find image from localData
             let imageUrl = null;
@@ -861,7 +826,7 @@ class PokeVault {
             }
 
             return `
-                <div class="product-card ${isLowStock ? 'low-stock' : ''}" style="animation-delay:${i * 0.04}s" data-id="${p.id}">
+                <div class="product-card" style="animation-delay:${i * 0.04}s" data-id="${p.id}">
                     <div class="product-card-header">
                         ${imageUrl ? `<img src="${imageUrl}" class="product-card-image" alt="${this.escapeHtml(p.name)}" onerror="this.style.display='none'">` : `<div class="product-type-icon">${type.icon}</div>`}
                         <div class="product-card-title">
@@ -878,21 +843,9 @@ class PokeVault {
 
                     <div class="product-details">
                         <div class="detail-item">
-                            <div class="detail-label">Acquisto</div>
+                            <div class="detail-label">Costo Acquisto</div>
                             <div class="detail-value">${formatCurrency(p.buyPrice)}</div>
                         </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Vendita</div>
-                            <div class="detail-value">${p.sellPrice ? formatCurrency(p.sellPrice) : '—'}</div>
-                        </div>
-                        ${profit !== null ? `
-                        <div class="detail-item">
-                            <div class="detail-label">Margine</div>
-                            <div class="detail-value ${profit >= 0 ? 'profit-positive' : 'profit-negative'}">
-                                ${profit >= 0 ? '+' : ''}${formatCurrency(profit)}
-                            </div>
-                        </div>
-                        ` : ''}
                         <div class="detail-item">
                             <div class="detail-label">Valore Tot.</div>
                             <div class="detail-value">${formatCurrency(p.buyPrice * p.quantity)}</div>
@@ -951,9 +904,7 @@ class PokeVault {
         const language = document.getElementById('form-language').value;
         const condition = document.getElementById('form-condition').value;
         const buyPrice = parseFloat(document.getElementById('form-buy-price').value);
-        const sellPrice = document.getElementById('form-sell-price').value ? parseFloat(document.getElementById('form-sell-price').value) : null;
         const quantity = parseInt(document.getElementById('form-quantity').value, 10);
-        const lowStockThreshold = parseInt(document.getElementById('form-low-stock').value, 10) || 2;
         const notes = document.getElementById('form-notes').value.trim();
 
         // Validation
@@ -969,7 +920,7 @@ class PokeVault {
 
         const productData = {
             name, type, expansion, language, condition,
-            buyPrice, sellPrice, quantity, lowStockThreshold, notes,
+            buyPrice, quantity, notes,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };
@@ -998,9 +949,7 @@ class PokeVault {
         const language = document.getElementById('edit-language').value;
         const condition = document.getElementById('edit-condition').value;
         const buyPrice = parseFloat(document.getElementById('edit-buy-price').value);
-        const sellPrice = document.getElementById('edit-sell-price').value ? parseFloat(document.getElementById('edit-sell-price').value) : null;
         const quantity = parseInt(document.getElementById('edit-quantity').value, 10);
-        const lowStockThreshold = parseInt(document.getElementById('edit-low-stock').value, 10) || 2;
         const notes = document.getElementById('edit-notes').value.trim();
 
         if (!name || !type || !language || !condition || isNaN(buyPrice) || isNaN(quantity)) {
@@ -1011,7 +960,7 @@ class PokeVault {
         try {
             await db.collection(PRODUCTS_COLLECTION).doc(id).update({
                 name, type, expansion, language, condition,
-                buyPrice, sellPrice, quantity, lowStockThreshold, notes,
+                buyPrice, quantity, notes,
                 updatedAt: new Date().toISOString(),
             });
             this.closeEditModal();
@@ -1055,9 +1004,7 @@ class PokeVault {
         document.getElementById('edit-language').value = product.language;
         document.getElementById('edit-condition').value = product.condition;
         document.getElementById('edit-buy-price').value = product.buyPrice;
-        document.getElementById('edit-sell-price').value = product.sellPrice || '';
         document.getElementById('edit-quantity').value = product.quantity;
-        document.getElementById('edit-low-stock').value = product.lowStockThreshold || 2;
         document.getElementById('edit-notes').value = product.notes || '';
         document.getElementById('modal-title').textContent = `Modifica: ${product.name}`;
 
@@ -1138,9 +1085,7 @@ class PokeVault {
 
         const totalQty = products.reduce((s, p) => s + p.quantity, 0);
         const totalBuyValue = products.reduce((s, p) => s + (p.buyPrice * p.quantity), 0);
-        const totalSellValue = products.reduce((s, p) => s + ((p.sellPrice || 0) * p.quantity), 0);
         const avgBuyPrice = totalQty > 0 ? totalBuyValue / totalQty : 0;
-        const totalProfit = totalSellValue - totalBuyValue;
 
         document.getElementById('stats-summary').innerHTML = `
             <div class="stat-summary-card">
@@ -1155,11 +1100,6 @@ class PokeVault {
                 <div class="stat-summary-label">Prezzo Medio Acq.</div>
                 <div class="stat-summary-value">${formatCurrency(avgBuyPrice)}</div>
             </div>
-            <div class="stat-summary-card">
-                <div class="stat-summary-label">Margine Potenziale</div>
-                <div class="stat-summary-value" style="color:${totalProfit >= 0 ? 'var(--color-success)' : 'var(--color-danger)'}">
-                    ${totalProfit >= 0 ? '+' : ''}${formatCurrency(totalProfit)}
-                </div>
             </div>
         `;
 
@@ -1267,8 +1207,8 @@ class PokeVault {
 
         const headers = [
             'Nome', 'Tipo', 'Espansione', 'Lingua', 'Condizione',
-            'Prezzo Acquisto (€)', 'Prezzo Vendita (€)', 'Quantità',
-            'Soglia Scorta', 'Note', 'Data Inserimento', 'Ultimo Aggiornamento'
+            'Prezzo Acquisto (€)', 'Quantità',
+            'Note', 'Data Inserimento', 'Ultimo Aggiornamento'
         ];
 
         const rows = this.products.map(p => [
@@ -1278,9 +1218,7 @@ class PokeVault {
             getLangInfo(p.language).label,
             getConditionInfo(p.condition).label,
             p.buyPrice.toFixed(2),
-            p.sellPrice ? p.sellPrice.toFixed(2) : '',
             p.quantity,
-            p.lowStockThreshold || 2,
             `"${(p.notes || '').replace(/"/g, '""')}"`,
             p.createdAt,
             p.updatedAt,
