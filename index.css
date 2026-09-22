@@ -4,38 +4,38 @@
 
 /* ─── CSS Custom Properties ─── */
 :root {
-    /* Colors */
-    --bg-primary: #07071a;
-    --bg-secondary: #0e0e2a;
-    --bg-surface: #141435;
-    --bg-surface-hover: #1c1c45;
-    --bg-elevated: #1e1e4a;
+    /* Colors - Gradassi Sumo Theme */
+    --bg-primary: #eadba7;
+    --bg-secondary: #f0e4b8;
+    --bg-surface: #fdfaf0;
+    --bg-surface-hover: #ffffff;
+    --bg-elevated: #ffffff;
 
-    --glass-bg: rgba(20, 20, 53, 0.65);
-    --glass-border: rgba(255, 203, 5, 0.08);
-    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    --glass-bg: rgba(253, 250, 240, 0.7);
+    --glass-border: rgba(35, 71, 125, 0.1);
+    --glass-shadow: 0 8px 32px rgba(35, 71, 125, 0.08);
 
-    --color-primary: #FFCB05;
-    --color-primary-dim: rgba(255, 203, 5, 0.15);
-    --color-primary-glow: rgba(255, 203, 5, 0.3);
-    --color-secondary: #3D7DCA;
-    --color-secondary-dim: rgba(61, 125, 202, 0.15);
-    --color-accent: #CC0000;
-    --color-accent-dim: rgba(204, 0, 0, 0.15);
+    --color-primary: #23477d;
+    --color-primary-dim: rgba(35, 71, 125, 0.15);
+    --color-primary-glow: rgba(35, 71, 125, 0.2);
+    --color-secondary: #97c2e3;
+    --color-secondary-dim: rgba(151, 194, 227, 0.2);
+    --color-accent: #cf3530;
+    --color-accent-dim: rgba(207, 53, 48, 0.15);
 
-    --color-success: #4ecdc4;
-    --color-success-dim: rgba(78, 205, 196, 0.15);
-    --color-warning: #ffe066;
-    --color-warning-dim: rgba(255, 224, 102, 0.15);
-    --color-danger: #ff6b6b;
-    --color-danger-dim: rgba(255, 107, 107, 0.15);
-    --color-info: #74b9ff;
-    --color-info-dim: rgba(116, 185, 255, 0.15);
+    --color-success: #3db88e;
+    --color-success-dim: rgba(61, 184, 142, 0.15);
+    --color-warning: #e69d00;
+    --color-warning-dim: rgba(230, 157, 0, 0.15);
+    --color-danger: #cf3530;
+    --color-danger-dim: rgba(207, 53, 48, 0.15);
+    --color-info: #5a94c7;
+    --color-info-dim: rgba(90, 148, 199, 0.15);
 
-    --text-primary: #f0f0f5;
-    --text-secondary: #9999bb;
-    --text-muted: #6666888;
-    --text-inverse: #07071a;
+    --text-primary: #152e55;
+    --text-secondary: #4a6792;
+    --text-muted: #7991b5;
+    --text-inverse: #ffffff;
 
     /* Typography */
     --font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -188,7 +188,10 @@ h3 { font-size: var(--font-lg); font-weight: 600; }
 }
 
 .logo h1 {
-    background: linear-gradient(135deg, var(--color-primary), #ffe066);
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -301,6 +304,14 @@ h3 { font-size: var(--font-lg); font-weight: 600; }
     background: var(--text-primary);
     border-radius: 2px;
     transition: all var(--transition-base);
+}
+
+.logo-image {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    border-radius: 50%;
+    border: 2px solid var(--color-primary);
 }
 
 .mobile-logo {
@@ -776,6 +787,15 @@ h3 { font-size: var(--font-lg); font-weight: 600; }
     background: var(--color-primary-dim);
     flex-shrink: 0;
 }
+
+.product-card-image {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
 
 .product-card-title {
     flex: 1;

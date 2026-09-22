@@ -94,6 +94,7 @@ class PokeVault {
         this.editingId = null;
         this.deleteId = null;
         this.isInitialLoad = true;
+        this.localData = null;
 
         this.init();
     }
@@ -104,6 +105,14 @@ class PokeVault {
         this.bindEvents();
         this.initAutocomplete();
         this.setupFirestoreListener();
+        
+        // Preload images data
+        getLocalPrices().then(data => {
+            this.localData = data;
+            if (this.currentSection === 'inventory') {
+                this.renderInventory();
+            }
+        }).catch(e => console.error("Failed to load local data:", e));
     }
 
     // ── Firestore Real-time Listener ──
@@ -826,10 +835,39 @@ class PokeVault {
             const isLowStock = p.quantity > 0 && p.quantity <= (p.lowStockThreshold || 2);
             const profit = p.sellPrice ? (p.sellPrice - p.buyPrice) : null;
 
+            // Try to find image from localData
+            let imageUrl = null;
+            if (this.localData && this.localData.sealed && typeof p.expansion === 'string') {
+                // Find the set by name securely
+                const setEntry = Object.values(this.localData.sealed).find(s => s && s.name && s.name.toLowerCase() === p.expansion.toLowerCase());
+                if (setEntry) {
+                    const typeMap = {
+                        'booster-box': 'bbImage',
+                        'etb': 'etbImage',
+                        'bundle': 'bundleImage',
+                        'booster-pack': 'packImage',
+                        'blister': 'blisterImage',
+                        'mini-tin': 'miniTinImage',
+                        'tin': 'tinImage',
+                        'special-box': 'specialImage',
+                        'special-collection': 'specialImage',
+                        'collection-box': 'specialImage',
+                        'premium-collection': 'premiumImage',
+                        'upc': 'upcImage',
+                        'build-battle': 'bnbImage',
+                        'build-and-battle': 'bnbImage'
+                    };
+                    const prop = typeMap[p.type];
+                    if (prop && setEntry[prop]) {
+                        imageUrl = setEntry[prop];
+                    }
+                }
+            }
+
             return `
                 <div class="product-card ${isLowStock ? 'low-stock' : ''}" style="animation-delay:${i * 0.04}s" data-id="${p.id}">
                     <div class="product-card-header">
-                        <div class="product-type-icon">${type.icon}</div>
+                        ${imageUrl ? `<img src="${imageUrl}" class="product-card-image" alt="${this.escapeHtml(p.name)}" onerror="this.style.display='none'">` : `<div class="product-type-icon">${type.icon}</div>`}
                         <div class="product-card-title">
                             <div class="product-name">${this.escapeHtml(p.name)}</div>
                             ${p.expansion ? `<div class="product-expansion">${this.escapeHtml(p.expansion)}</div>` : ''}
