@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GradassiStorage — Gestione Magazzino Pokémon</title>
+    <meta name="description" content="GradassiStorage — Gestione inventario e magazzino per prodotti Pokémon TCG: Box, Display, ETB e molto altro.">
+    <meta name="theme-color" content="#0a0a1a">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <span class="logo-icon">⚡</span>
+                <h1>GradassiStorage</h1>
+            </div>
+            <button class="sidebar-close" id="sidebar-close" aria-label="Chiudi menu">✕</button>
+        </div>
+        <ul class="nav-menu">
+            <li><a href="#" class="nav-link active" data-section="dashboard" id="nav-dashboard"><span class="nav-icon">📊</span> Dashboard</a></li>
+            <li><a href="#" class="nav-link" data-section="inventory" id="nav-inventory"><span class="nav-icon">📦</span> Inventario</a></li>
+            <li><a href="#" class="nav-link" data-section="wizard-sets" id="nav-add-product"><span class="nav-icon">➕</span> Aggiungi</a></li>
+            <li><a href="#" class="nav-link" data-section="stats" id="nav-stats"><span class="nav-icon">📈</span> Statistiche</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <button class="btn btn-ghost btn-sm" id="export-csv-btn">
+                <span>📥</span> Esporta CSV
+            </button>
+            <button class="btn btn-ghost btn-sm" id="load-demo-btn">
+                <span>🎮</span> Dati Demo
+            </button>
+        </div>
+    </nav>
+
+    <!-- Overlay for mobile sidebar -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- Mobile Header -->
+    <header class="mobile-header" id="mobile-header">
+        <button class="hamburger" id="hamburger" aria-label="Apri menu">
+            <span></span><span></span><span></span>
+        </button>
+        <div class="mobile-logo">
+            <span class="logo-icon">⚡</span> GradassiStorage
+        </div>
+        <div class="mobile-spacer"></div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content" id="main-content">
+
+        <!-- ═══════════ DASHBOARD ═══════════ -->
+        <section class="section active" id="section-dashboard">
+            <div class="section-header">
+                <h2>Dashboard</h2>
+                <p class="section-subtitle">Panoramica del tuo magazzino Pokémon</p>
+            </div>
+
+            <div class="kpi-grid" id="kpi-grid"></div>
+
+            <div class="dashboard-grid">
+                <div class="card card-glass">
+                    <h3 class="card-title"><span>🕐</span> Ultimi Inserimenti</h3>
+                    <div id="recent-products-list" class="recent-list"></div>
+                </div>
+                <div class="card card-glass">
+                    <h3 class="card-title"><span>⚠️</span> Scorte Basse</h3>
+                    <div id="low-stock-list" class="recent-list"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════ INVENTORY ═══════════ -->
+        <section class="section" id="section-inventory">
+            <div class="section-header">
+                <h2>Inventario</h2>
+                <p class="section-subtitle">Tutti i prodotti nel tuo magazzino</p>
+            </div>
+
+            <div class="toolbar">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="search-input" placeholder="Cerca per nome, espansione..." autocomplete="off">
+                    <button class="search-clear" id="search-clear" aria-label="Cancella ricerca" style="display:none">✕</button>
+                </div>
+                <div class="filters">
+                    <select id="filter-type" class="filter-select" aria-label="Filtra per tipo">
+                        <option value="">Tutti i tipi</option>
+                    </select>
+                    <select id="filter-language" class="filter-select" aria-label="Filtra per lingua">
+                        <option value="">Tutte le lingue</option>
+                    </select>
+                    <select id="filter-condition" class="filter-select" aria-label="Filtra per condizione">
+                        <option value="">Tutte le condizioni</option>
+                    </select>
+                    <select id="sort-select" class="filter-select" aria-label="Ordina per">
+                        <option value="date-desc">Più recenti</option>
+                        <option value="date-asc">Più vecchi</option>
+                        <option value="name-asc">Nome A-Z</option>
+                        <option value="name-desc">Nome Z-A</option>
+                        <option value="price-asc">Prezzo ↑</option>
+                        <option value="price-desc">Prezzo ↓</option>
+                        <option value="qty-asc">Quantità ↑</option>
+                        <option value="qty-desc">Quantità ↓</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="inventory-count" id="inventory-count"></div>
+
+            <div class="product-grid" id="product-grid"></div>
+
+            <div class="empty-state" id="empty-state" style="display:none">
+                <div class="empty-icon">📦</div>
+                <h3>Nessun prodotto trovato</h3>
+                <p>Aggiungi il tuo primo prodotto o carica i dati demo!</p>
+                <div class="empty-actions">
+                    <button class="btn btn-primary" id="empty-add-btn">➕ Aggiungi Prodotto</button>
+                    <button class="btn btn-outline" id="empty-demo-btn">🎮 Carica Demo</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════ ADD PRODUCT WIZARD ═══════════ -->
+        <!-- Wizard: Select Set -->
+        <section class="section fade-in" id="section-wizard-sets">
+            <div class="wizard-header">
+                <h2 class="wizard-title">Tutti i Set</h2>
+                <p class="wizard-subtitle" id="wizard-sets-subtitle">Caricamento espansioni...</p>
+            </div>
+            <div class="sets-grid stagger" id="wizard-sets-grid">
+                <div class="stats-empty">
+                    <div class="stats-empty-icon">⏳</div>
+                    <p>Caricamento espansioni...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Wizard: Select Sealed Product -->
+        <section class="section fade-in" id="section-wizard-sealed">
+            <button type="button" class="wizard-back-btn" id="wizard-back-btn">
+                <span>←</span> Torna ai Set
+            </button>
+            <div class="wizard-header">
+                <h2 class="wizard-title" id="wizard-sealed-title">Espansione</h2>
+                <p class="wizard-subtitle">Seleziona il prodotto da aggiungere al magazzino</p>
+            </div>
+            <div class="sealed-grid stagger" id="wizard-sealed-grid">
+                <!-- Prodotti Sealed -->
+            </div>
+        </section>
+
+        <!-- ═══════════ ADD PRODUCT FORM ═══════════ -->
+        <section class="section" id="section-add-product">
+            <div class="section-header">
+                <h2 id="add-section-title">Aggiungi Prodotto</h2>
+                <p class="section-subtitle" id="add-section-subtitle">Inserisci un nuovo prodotto nel magazzino</p>
+            </div>
+
+            <form class="product-form card card-glass" id="product-form" novalidate>
+                <input type="hidden" id="form-id" value="">
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="form-type">Tipo <span class="required">*</span></label>
+                        <select id="form-type" required></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="form-expansion">Espansione / Set <span class="required">*</span></label>
+                        <div class="autocomplete-wrapper" id="form-expansion-wrapper">
+                            <input type="text" id="form-expansion" placeholder="Cerca espansione..." autocomplete="off">
+                            <div class="autocomplete-dropdown" id="form-expansion-dropdown"></div>
+                        </div>
+                        <div class="set-preview" id="form-set-preview"></div>
+                    </div>
+
+                    <div class="form-group span-full">
+                        <label for="form-name">Prodotto / Carta <span class="required">*</span></label>
+                        <div class="autocomplete-wrapper" id="form-product-wrapper">
+                            <input type="text" id="form-name" required placeholder="Seleziona prima l'espansione, poi cerca qui il prodotto..." autocomplete="off" disabled>
+                            <div class="autocomplete-dropdown" id="form-product-dropdown"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="form-language">Lingua <span class="required">*</span></label>
+                        <select id="form-language" required></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="form-condition">Condizione <span class="required">*</span></label>
+                        <select id="form-condition" required></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="form-buy-price">Prezzo Acquisto (€) <span class="required">*</span></label>
+                        <input type="number" id="form-buy-price" required min="0" step="0.01" placeholder="0.00">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="form-sell-price">Prezzo Vendita (€)</label>
+                        <input type="number" id="form-sell-price" min="0" step="0.01" placeholder="0.00">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="form-quantity">Quantità <span class="required">*</span></label>
+                        <input type="number" id="form-quantity" required min="0" step="1" value="1">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="form-low-stock">Soglia Scorta Bassa</label>
+                        <input type="number" id="form-low-stock" min="0" step="1" value="2">
+                    </div>
+
+                    <div class="form-group span-full">
+                        <label for="form-notes">Note</label>
+                        <textarea id="form-notes" rows="3" placeholder="Note aggiuntive..."></textarea>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-lg" id="form-submit-btn">
+                        <span>➕</span> Aggiungi Prodotto
+                    </button>
+                    <button type="button" class="btn btn-outline" id="form-reset-btn">Annulla</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- ═══════════ STATISTICS ═══════════ -->
+        <section class="section" id="section-stats">
+            <div class="section-header">
+                <h2>Statistiche</h2>
+                <p class="section-subtitle">Analisi del tuo magazzino</p>
+            </div>
+
+            <div class="stats-summary-grid" id="stats-summary"></div>
+            <div class="stats-charts-grid" id="stats-charts"></div>
+        </section>
+
+    </main>
+
+    <!-- ═══════════ EDIT MODAL ═══════════ -->
+    <div class="modal-overlay" id="edit-modal-overlay">
+        <div class="modal card-glass" id="edit-modal">
+            <div class="modal-header">
+                <h3 id="modal-title">Modifica Prodotto</h3>
+                <button class="modal-close" id="modal-close" aria-label="Chiudi">✕</button>
+            </div>
+            <form id="edit-form" class="modal-body" novalidate>
+                <input type="hidden" id="edit-id" value="">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="edit-type">Tipo <span class="required">*</span></label>
+                        <select id="edit-type" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-expansion">Espansione / Set <span class="required">*</span></label>
+                        <div class="autocomplete-wrapper" id="edit-expansion-wrapper">
+                            <input type="text" id="edit-expansion" autocomplete="off">
+                            <div class="autocomplete-dropdown" id="edit-expansion-dropdown"></div>
+                        </div>
+                        <div class="set-preview" id="edit-set-preview"></div>
+                    </div>
+                    <div class="form-group span-full">
+                        <label for="edit-name">Prodotto / Carta <span class="required">*</span></label>
+                        <div class="autocomplete-wrapper" id="edit-product-wrapper">
+                            <input type="text" id="edit-name" required placeholder="Cerca prodotto..." autocomplete="off">
+                            <div class="autocomplete-dropdown" id="edit-product-dropdown"></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-language">Lingua <span class="required">*</span></label>
+                        <select id="edit-language" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-condition">Condizione <span class="required">*</span></label>
+                        <select id="edit-condition" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-buy-price">Prezzo Acquisto (€) <span class="required">*</span></label>
+                        <input type="number" id="edit-buy-price" required min="0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-sell-price">Prezzo Vendita (€)</label>
+                        <input type="number" id="edit-sell-price" min="0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-quantity">Quantità <span class="required">*</span></label>
+                        <input type="number" id="edit-quantity" required min="0" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-low-stock">Soglia Scorta Bassa</label>
+                        <input type="number" id="edit-low-stock" min="0" step="1">
+                    </div>
+                    <div class="form-group span-full">
+                        <label for="edit-notes">Note</label>
+                        <textarea id="edit-notes" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">💾 Salva Modifiche</button>
+                    <button type="button" class="btn btn-danger" id="modal-delete-btn">🗑️ Elimina</button>
+                    <button type="button" class="btn btn-outline" id="modal-cancel-btn">Annulla</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ═══════════ DELETE CONFIRMATION ═══════════ -->
+    <div class="modal-overlay" id="delete-modal-overlay">
+        <div class="modal modal-sm card-glass">
+            <div class="modal-header">
+                <h3>Conferma Eliminazione</h3>
+                <button class="modal-close" id="delete-modal-close" aria-label="Chiudi">✕</button>
+            </div>
+            <div class="modal-body delete-confirm-body">
+                <div class="delete-icon">🗑️</div>
+                <p id="delete-confirm-text">Sei sicuro di voler eliminare questo prodotto?</p>
+                <p class="delete-warning">Questa azione non può essere annullata.</p>
+                <div class="form-actions">
+                    <button class="btn btn-danger" id="delete-confirm-btn">🗑️ Elimina</button>
+                    <button class="btn btn-outline" id="delete-cancel-btn">Annulla</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="api.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
