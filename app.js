@@ -405,7 +405,7 @@ class PokeVault {
         // Autogenerate per prodotti sigillati standard
         const type = typeSelect.value;
         const typeInfo = getTypeInfo(type);
-        if (type !== 'single-card' && (type === 'booster-box' || type === 'etb')) {
+        if (type && type !== 'single' && type !== 'other' && type !== 'slab') {
             const lang = document.getElementById(`${prefix}-language`).value;
             const langSuffix = lang ? ` (${lang.toUpperCase()})` : '';
             productInput.value = `${typeInfo.label} ${set.name}${langSuffix}`;
@@ -983,7 +983,6 @@ class PokeVault {
         if (form) form.reset();
         document.getElementById('form-id').value = '';
         document.getElementById('form-quantity').value = '1';
-        document.getElementById('form-low-stock').value = '2';
         document.querySelectorAll('#product-form .invalid').forEach(el => el.classList.remove('invalid'));
 
         document.getElementById('add-section-title').textContent = 'Aggiungi Prodotto';
