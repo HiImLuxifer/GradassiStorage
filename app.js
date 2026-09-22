@@ -632,12 +632,12 @@ class PokeVault {
                 image = sealedSet[prod.imageProp];
             }
             if (!image) {
-                image = setObj.logo ? setLogoUrl(setObj.logo) : 'https://tcg.pokemon.com/assets/img/global/logos/logo-pokemon-tcg.png';
+                image = setObj.logo ? setLogoUrl(setObj.logo) : 'images/logo.png';
             }
             
             html += `
                 <div class="sealed-card" data-type="${prod.type}" data-label="${prod.label}" data-price="${price || ''}">
-                    <img src="${image}" alt="${prod.label}" loading="lazy" onerror="this.src='https://tcg.pokemon.com/assets/img/global/logos/logo-pokemon-tcg.png'; this.style.opacity=0.3;">
+                    <img src="${image}" alt="${prod.label}" loading="lazy" onerror="this.src='images/logo.png'; this.style.opacity=0.3;">
                     <h3>${prod.label}</h3>
                     <p>${setObj.name}</p>
                 </div>
