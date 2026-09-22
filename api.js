@@ -51,6 +51,9 @@ async function getModernSets() {
     // 30° Anniversario
     if (id === '30th') return true;
 
+    // Luce Nera & Fuoco Bianco (sv10.5b e sv10.5w)
+    if (id === 'sv10.5b' || id === 'sv10.5w') return true;
+
     // Set europei ufficiali: sv o me seguiti da numeri (e opzionalmente decimali, es. me02.5)
     // Questo scarta in automatico le versioni giapponesi/asiatiche (sv10.5b, B1a, A2, ecc.)
     return /^(sv|me)\d+(\.\d+)?$/.test(id);

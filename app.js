@@ -797,8 +797,8 @@ class PokeVault {
             const cond = getConditionInfo(p.condition);
 
             // Try to find image from localData
-            let imageUrl = null;
-            if (this.localData && this.localData.sealed && typeof p.expansion === 'string') {
+            let imageUrl = p.imageUrl || null;
+            if (!imageUrl && this.localData && this.localData.sealed && typeof p.expansion === 'string') {
                 // Find the set by name securely
                 const setEntry = Object.values(this.localData.sealed).find(s => s && s.name && s.name.toLowerCase() === p.expansion.toLowerCase());
                 if (setEntry) {
@@ -905,6 +905,7 @@ class PokeVault {
         const condition = document.getElementById('form-condition').value;
         const buyPrice = parseFloat(document.getElementById('form-buy-price').value);
         const quantity = parseInt(document.getElementById('form-quantity').value, 10);
+        const imageUrl = document.getElementById('form-image-url').value.trim();
         const notes = document.getElementById('form-notes').value.trim();
 
         // Validation
@@ -920,7 +921,7 @@ class PokeVault {
 
         const productData = {
             name, type, expansion, language, condition,
-            buyPrice, quantity, notes,
+            buyPrice, quantity, imageUrl, notes,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };
@@ -950,6 +951,7 @@ class PokeVault {
         const condition = document.getElementById('edit-condition').value;
         const buyPrice = parseFloat(document.getElementById('edit-buy-price').value);
         const quantity = parseInt(document.getElementById('edit-quantity').value, 10);
+        const imageUrl = document.getElementById('edit-image-url').value.trim();
         const notes = document.getElementById('edit-notes').value.trim();
 
         if (!name || !type || !language || !condition || isNaN(buyPrice) || isNaN(quantity)) {
@@ -960,7 +962,7 @@ class PokeVault {
         try {
             await db.collection(PRODUCTS_COLLECTION).doc(id).update({
                 name, type, expansion, language, condition,
-                buyPrice, quantity, notes,
+                buyPrice, quantity, imageUrl, notes,
                 updatedAt: new Date().toISOString(),
             });
             this.closeEditModal();
@@ -983,6 +985,7 @@ class PokeVault {
         if (form) form.reset();
         document.getElementById('form-id').value = '';
         document.getElementById('form-quantity').value = '1';
+        document.getElementById('form-image-url').value = '';
         document.querySelectorAll('#product-form .invalid').forEach(el => el.classList.remove('invalid'));
 
         document.getElementById('add-section-title').textContent = 'Aggiungi Prodotto';
@@ -1004,6 +1007,7 @@ class PokeVault {
         document.getElementById('edit-condition').value = product.condition;
         document.getElementById('edit-buy-price').value = product.buyPrice;
         document.getElementById('edit-quantity').value = product.quantity;
+        document.getElementById('edit-image-url').value = product.imageUrl || '';
         document.getElementById('edit-notes').value = product.notes || '';
         document.getElementById('modal-title').textContent = `Modifica: ${product.name}`;
 
