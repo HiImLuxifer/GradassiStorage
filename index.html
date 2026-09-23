@@ -6,7 +6,7 @@
     <title>GradassiStorage — Gestione Magazzino Pokémon</title>
     <meta name="description" content="GradassiStorage — Gestione inventario e magazzino per prodotti Pokémon TCG: Box, Display, ETB e molto altro.">
     <meta name="theme-color" content="#0a0a1a">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'></text></svg>">
+    <link rel="icon" type="image/png" href="images/favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -26,10 +26,17 @@
         <ul class="nav-menu">
             <li><a href="#" class="nav-link active" data-section="dashboard" id="nav-dashboard"><span class="nav-icon">📊</span> Dashboard</a></li>
             <li><a href="#" class="nav-link" data-section="inventory" id="nav-inventory"><span class="nav-icon">📦</span> Inventario</a></li>
-            <li><a href="#" class="nav-link" data-section="wizard-sets" id="nav-add-product"><span class="nav-icon">➕</span> Aggiungi</a></li>
+            <li><a href="#" class="nav-link" data-section="wizard-sets" id="nav-add-product" data-auth-required><span class="nav-icon">➕</span> Aggiungi</a></li>
             <li><a href="#" class="nav-link" data-section="stats" id="nav-stats"><span class="nav-icon">📈</span> Statistiche</a></li>
         </ul>
         <div class="sidebar-footer">
+            <div id="sidebar-user-info" style="display:none"></div>
+            <button class="btn btn-auth btn-sm" id="sidebar-login-btn">
+                <span>🔒</span> Accedi
+            </button>
+            <button class="btn btn-ghost btn-sm" id="sidebar-logout-btn" style="display:none">
+                <span>🚪</span> Esci
+            </button>
             <button class="btn btn-ghost btn-sm" id="export-csv-btn">
                 <span>📥</span> Esporta CSV
             </button>
@@ -116,7 +123,7 @@
                 <h3>Nessun prodotto trovato</h3>
                 <p>Nessun prodotto trovato. Aggiungi il tuo primo prodotto!</p>
                 <div class="empty-actions">
-                    <button class="btn btn-primary" id="empty-add-btn">➕ Nuovo Prodotto</button>
+                    <button class="btn btn-primary" id="empty-add-btn" data-auth-required>➕ Nuovo Prodotto</button>
                 </div>
             </div>
         </section>
@@ -318,13 +325,51 @@
         </div>
     </div>
 
+    <!-- ═══════════ AUTH LOGIN MODAL ═══════════ -->
+    <div class="modal-overlay auth-modal-overlay" id="auth-modal-overlay">
+        <div class="auth-modal card-glass">
+            <button class="modal-close" id="auth-modal-close" aria-label="Chiudi">✕</button>
+            <div class="auth-modal-header">
+                <div class="auth-logo">
+                    <img src="images/logo.png" alt="Logo" class="auth-logo-img">
+                </div>
+                <h2 id="auth-modal-title">Accedi a GradassiStorage</h2>
+                <p class="auth-subtitle">Gestisci il tuo magazzino Pokémon</p>
+            </div>
+
+            <form id="auth-form" class="auth-form" novalidate>
+                <div class="auth-field">
+                    <label for="auth-email">Email</label>
+                    <div class="auth-input-wrap">
+                        <span class="auth-input-icon">📧</span>
+                        <input type="email" id="auth-email" placeholder="la-tua@email.com" autocomplete="email" required>
+                    </div>
+                </div>
+                <div class="auth-field">
+                    <label for="auth-password">Password</label>
+                    <div class="auth-input-wrap">
+                        <span class="auth-input-icon">🔑</span>
+                        <input type="password" id="auth-password" placeholder="Almeno 6 caratteri" autocomplete="current-password" required minlength="6">
+                    </div>
+                </div>
+                <div class="auth-error" id="auth-error" style="display:none"></div>
+                <button type="submit" class="btn btn-primary btn-lg auth-submit-btn" id="auth-submit-btn">
+                    <span class="auth-btn-text">Accedi</span>
+                    <span class="auth-btn-loader"></span>
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- Toast Container -->
     <div class="toast-container" id="toast-container"></div>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <script src="api.js"></script>
+    <script src="auth.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

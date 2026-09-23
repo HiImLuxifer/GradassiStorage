@@ -497,6 +497,13 @@ class PokeVault {
 
     // ── Navigation ──
     navigateTo(section) {
+        // Auth guard for protected sections
+        const protectedSections = ['wizard-sets', 'wizard-sealed', 'add-product'];
+        if (protectedSections.includes(section) && typeof authManager !== 'undefined' && !authManager.isLoggedIn()) {
+            authManager.requireAuth('aggiungere prodotti');
+            return;
+        }
+
         this.currentSection = section;
 
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
@@ -853,6 +860,7 @@ class PokeVault {
                     </div>
 
                     <div class="product-footer">
+                        ${this.isUserLoggedIn() ? `
                         <div class="qty-controls">
                             <button class="qty-btn" onclick="app.adjustQty('${p.id}', -1)" title="Rimuovi 1">−</button>
                             <span class="qty-display">${p.quantity}</span>
@@ -862,6 +870,11 @@ class PokeVault {
                             <button class="btn-icon" onclick="app.openEditModal('${p.id}')" title="Modifica">✏️</button>
                             <button class="btn-icon danger" onclick="app.openDeleteConfirmDirect('${p.id}')" title="Elimina">🗑️</button>
                         </div>
+                        ` : `
+                        <div class="qty-controls">
+                            <span class="qty-display">×${p.quantity}</span>
+                        </div>
+                        `}
                     </div>
 
                     ${p.notes ? `<div style="margin-top:var(--space-md);padding-top:var(--space-sm);border-top:1px solid rgba(255,255,255,0.04);font-size:var(--font-xs);color:var(--text-secondary)">📝 ${this.escapeHtml(p.notes)}</div>` : ''}
@@ -872,6 +885,7 @@ class PokeVault {
 
     // ── Quick Quantity Adjust (Firestore) ──
     async adjustQty(id, delta) {
+        if (typeof authManager !== 'undefined' && !authManager.requireAuth('modificare la quantità')) return;
         const product = this.products.find(p => p.id === id);
         if (!product) return;
 
@@ -898,6 +912,7 @@ class PokeVault {
     // ADD PRODUCT (Firestore)
     // ══════════════════════════════════════════════
     async handleAddProduct() {
+        if (typeof authManager !== 'undefined' && !authManager.requireAuth('aggiungere prodotti')) return;
         const name = document.getElementById('form-name').value.trim();
         const type = document.getElementById('form-type').value;
         const expansion = document.getElementById('form-expansion').value.trim();
@@ -941,6 +956,7 @@ class PokeVault {
     // EDIT PRODUCT (Firestore)
     // ══════════════════════════════════════════════
     async handleEditProduct() {
+        if (typeof authManager !== 'undefined' && !authManager.requireAuth('modificare prodotti')) return;
         const id = document.getElementById('edit-id').value;
         if (!id) return;
 
@@ -995,6 +1011,7 @@ class PokeVault {
 
     // ── Edit Modal ──
     openEditModal(id) {
+        if (typeof authManager !== 'undefined' && !authManager.requireAuth('modificare prodotti')) return;
         const product = this.products.find(p => p.id === id);
         if (!product) return;
 
@@ -1033,6 +1050,7 @@ class PokeVault {
     }
 
     openDeleteConfirmDirect(id) {
+        if (typeof authManager !== 'undefined' && !authManager.requireAuth('eliminare prodotti')) return;
         this.deleteId = id;
         const product = this.products.find(p => p.id === id);
         if (!product) return;
@@ -1044,6 +1062,7 @@ class PokeVault {
     }
 
     async handleDeleteProduct() {
+        if (typeof authManager !== 'undefined' && !authManager.requireAuth('eliminare prodotti')) return;
         if (!this.deleteId) return;
 
         const product = this.products.find(p => p.id === this.deleteId);
@@ -1265,10 +1284,29 @@ class PokeVault {
         div.textContent = text;
         return div.innerHTML;
     }
+
+    /** Check if user is currently logged in (safe check) */
+    isUserLoggedIn() {
+        return typeof authManager !== 'undefined' && authManager.isLoggedIn();
+    }
 }
 
 // ─── Initialize App ───
 let app;
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize Auth Manager first
+    authManager = new AuthManager();
+
+    // Initialize App
     app = new PokeVault();
+
+    // Re-render inventory when auth state changes (to show/hide edit buttons)
+    authManager.onAuthChanged(() => {
+        if (app.currentSection === 'inventory') {
+            app.renderInventory();
+        }
+        if (app.currentSection === 'dashboard') {
+            app.renderDashboard();
+        }
+    });
 });

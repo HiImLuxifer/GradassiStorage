@@ -1607,3 +1607,359 @@ h3 { font-size: var(--font-lg); font-weight: 600; }
 
     .empty-actions { flex-direction: column; }
 }
+
+/* ══════════════════════════════════════════════
+   AUTH — Login Modal & Auth-Aware UI
+   ══════════════════════════════════════════════ */
+
+/* ─── Auth Hidden Utility ─── */
+[data-auth-required].auth-hidden {
+    opacity: 0.4;
+    pointer-events: none;
+    user-select: none;
+    position: relative;
+}
+
+[data-auth-required].auth-hidden::after {
+    content: '🔒';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1rem;
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+/* Small inline elements: don't show lock icon overlay */
+a[data-auth-required].auth-hidden::after {
+    content: ' 🔒';
+    position: static;
+    transform: none;
+    font-size: 0.75rem;
+}
+
+a[data-auth-required].auth-hidden {
+    opacity: 0.45;
+    pointer-events: none;
+}
+
+/* ─── Auth Modal Overlay ─── */
+.auth-modal-overlay {
+    z-index: 2000;
+}
+
+.auth-modal {
+    width: 90%;
+    max-width: 420px;
+    padding: 0;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--glass-border);
+    box-shadow:
+        0 24px 80px rgba(35, 71, 125, 0.18),
+        0 8px 32px rgba(35, 71, 125, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    animation: authModalIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+}
+
+@keyframes authModalIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.auth-modal .modal-close {
+    position: absolute;
+    top: var(--space-md);
+    right: var(--space-md);
+    z-index: 10;
+    background: var(--bg-surface);
+    border: 1px solid var(--glass-border);
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+}
+
+.auth-modal .modal-close:hover {
+    background: var(--color-danger-dim);
+    color: var(--color-danger);
+    transform: rotate(90deg);
+}
+
+/* ─── Auth Modal Header ─── */
+.auth-modal-header {
+    text-align: center;
+    padding: var(--space-xl) var(--space-xl) var(--space-md);
+}
+
+.auth-logo {
+    margin-bottom: var(--space-md);
+}
+
+.auth-logo-img {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 4px 16px rgba(35, 71, 125, 0.15);
+    object-fit: contain;
+    background: var(--bg-surface);
+    padding: 6px;
+}
+
+.auth-modal-header h2 {
+    font-size: var(--font-xl);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--space-xs);
+}
+
+.auth-subtitle {
+    font-size: var(--font-sm);
+    color: var(--text-muted);
+}
+
+/* ─── Auth Tabs ─── */
+.auth-tabs {
+    display: flex;
+    margin: 0 var(--space-xl);
+    background: var(--color-primary-dim);
+    border-radius: var(--radius-full);
+    padding: 3px;
+    gap: 2px;
+}
+
+.auth-tab {
+    flex: 1;
+    padding: var(--space-sm) var(--space-md);
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: var(--font-family);
+    font-size: var(--font-sm);
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.auth-tab:hover {
+    color: var(--text-primary);
+}
+
+.auth-tab.active {
+    background: var(--bg-elevated);
+    color: var(--color-primary);
+    box-shadow: 0 2px 8px rgba(35, 71, 125, 0.1);
+}
+
+/* ─── Auth Form ─── */
+.auth-form {
+    padding: var(--space-lg) var(--space-xl) var(--space-xl);
+}
+
+.auth-field {
+    margin-bottom: var(--space-md);
+}
+
+.auth-field label {
+    display: block;
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--space-xs);
+}
+
+.auth-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.auth-input-icon {
+    position: absolute;
+    left: var(--space-md);
+    font-size: var(--font-base);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.auth-input-wrap input {
+    width: 100%;
+    padding: var(--space-md) var(--space-md) var(--space-md) calc(var(--space-md) + 28px);
+    border: 2px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    font-family: var(--font-family);
+    font-size: var(--font-base);
+    transition: all var(--transition-base);
+    outline: none;
+}
+
+.auth-input-wrap input:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-dim);
+    background: var(--bg-elevated);
+}
+
+.auth-input-wrap input::placeholder {
+    color: var(--text-muted);
+}
+
+/* ─── Auth Error Message ─── */
+.auth-error {
+    background: var(--color-danger-dim);
+    color: var(--color-danger);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-sm);
+    font-weight: 500;
+    margin-bottom: var(--space-md);
+    border-left: 3px solid var(--color-danger);
+    animation: authErrorShake 0.4s ease;
+}
+
+@keyframes authErrorShake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+}
+
+/* ─── Auth Submit Button ─── */
+.auth-submit-btn {
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    margin-top: var(--space-sm);
+}
+
+.auth-submit-btn .auth-btn-loader {
+    display: none;
+}
+
+.auth-submit-btn.loading .auth-btn-text {
+    opacity: 0;
+}
+
+.auth-submit-btn.loading .auth-btn-loader {
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: authSpin 0.6s linear infinite;
+}
+
+@keyframes authSpin {
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* ─── Sidebar Auth UI ─── */
+.btn-auth {
+    background: var(--color-primary);
+    color: var(--text-inverse);
+    border: none;
+    width: 100%;
+    justify-content: center;
+    font-weight: 600;
+    transition: all var(--transition-base);
+}
+
+.btn-auth:hover {
+    background: #1a365d;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(35, 71, 125, 0.3);
+}
+
+/* ─── User Badge ─── */
+.user-badge {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--color-primary-dim);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-sm);
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    background: var(--color-primary);
+    color: var(--text-inverse);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: var(--font-sm);
+    flex-shrink: 0;
+}
+
+.user-details {
+    overflow: hidden;
+    flex: 1;
+    min-width: 0;
+}
+
+.user-email {
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+}
+
+/* ─── Auth Responsive ─── */
+@media (max-width: 768px) {
+    .auth-modal {
+        width: 95%;
+        max-width: 380px;
+    }
+
+    .auth-modal-header {
+        padding: var(--space-lg) var(--space-lg) var(--space-sm);
+    }
+
+    .auth-tabs {
+        margin: 0 var(--space-lg);
+    }
+
+    .auth-form {
+        padding: var(--space-md) var(--space-lg) var(--space-lg);
+    }
+
+    .auth-logo-img {
+        width: 52px;
+        height: 52px;
+    }
+
+    .auth-modal-header h2 {
+        font-size: var(--font-lg);
+    }
+}
