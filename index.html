@@ -28,6 +28,7 @@
             <li><a href="#" class="nav-link" data-section="inventory" id="nav-inventory"><span class="nav-icon">📦</span> Inventario</a></li>
             <li><a href="#" class="nav-link" data-section="wizard-sets" id="nav-add-product" data-auth-required><span class="nav-icon">➕</span> Aggiungi</a></li>
             <li><a href="#" class="nav-link" data-section="stats" id="nav-stats"><span class="nav-icon">📈</span> Statistiche</a></li>
+            <li><a href="#" class="nav-link" data-section="balance" id="nav-balance" data-auth-required><span class="nav-icon">💰</span> Saldo</a></li>
         </ul>
         <div class="sidebar-footer">
             <div id="sidebar-user-info" style="display:none"></div>
@@ -241,6 +242,86 @@
             <div class="stats-charts-grid" id="stats-charts"></div>
         </section>
 
+        <!-- ═══════════ BALANCE ═══════════ -->
+        <section class="section" id="section-balance">
+            <div class="section-header">
+                <h2>Gestione Saldo</h2>
+                <p class="section-subtitle">Monitora le tue entrate e uscite</p>
+            </div>
+
+            <!-- KPI Saldo -->
+            <div class="balance-kpi-grid" id="balance-kpi-grid">
+                <div class="kpi-card blue">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Saldo Corrente</span>
+                        <div class="kpi-icon">💰</div>
+                    </div>
+                    <div class="kpi-value" id="balance-total">€0,00</div>
+                    <div class="kpi-sub" id="balance-total-sub">Nessuna operazione</div>
+                </div>
+                <div class="kpi-card green">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Totale Entrate</span>
+                        <div class="kpi-icon">📈</div>
+                    </div>
+                    <div class="kpi-value" id="balance-income">€0,00</div>
+                    <div class="kpi-sub" id="balance-income-sub">0 operazioni</div>
+                </div>
+                <div class="kpi-card red">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Totale Uscite</span>
+                        <div class="kpi-icon">📉</div>
+                    </div>
+                    <div class="kpi-value" id="balance-expense">€0,00</div>
+                    <div class="kpi-sub" id="balance-expense-sub">0 operazioni</div>
+                </div>
+            </div>
+
+            <!-- Form Nuova Operazione -->
+            <div class="card card-glass balance-form-card">
+                <h3 class="card-title"><span>➕</span> Nuova Operazione</h3>
+                <form id="balance-form" class="balance-form" novalidate>
+                    <div class="balance-form-grid">
+                        <div class="form-group">
+                            <label for="txn-type">Tipo</label>
+                            <select id="txn-type" required>
+                                <option value="income">📈 Entrata</option>
+                                <option value="expense">📉 Uscita</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="txn-amount">Importo (€)</label>
+                            <input type="number" id="txn-amount" required min="0.01" step="0.01" placeholder="0.00">
+                        </div>
+                        <div class="form-group balance-form-desc">
+                            <label for="txn-description">Descrizione</label>
+                            <input type="text" id="txn-description" required placeholder="Es. Vendita ETB Prismatic..." autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="txn-date">Data</label>
+                            <input type="date" id="txn-date" required>
+                        </div>
+                    </div>
+                    <div class="balance-form-actions">
+                        <button type="submit" class="btn btn-primary" id="txn-submit-btn">
+                            <span>➕</span> Aggiungi Operazione
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Storico Operazioni -->
+            <div class="card card-glass balance-history-card">
+                <h3 class="card-title"><span>📋</span> Storico Operazioni</h3>
+                <div id="balance-history-list" class="balance-history-list">
+                    <div class="balance-empty-state">
+                        <div class="balance-empty-icon">💸</div>
+                        <p>Nessuna operazione registrata</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <!-- ═══════════ EDIT MODAL ═══════════ -->
@@ -322,6 +403,68 @@
                     <button class="btn btn-outline" id="delete-cancel-btn">Annulla</button>
                 </div>
             </div>
+        </div>
+    </div>
+    <!-- ═══════════ SELL MODAL ═══════════ -->
+    <div class="modal-overlay" id="sell-modal-overlay">
+        <div class="modal modal-sm card-glass">
+            <div class="modal-header">
+                <h3>Vendi Prodotto</h3>
+                <button class="modal-close" id="sell-modal-close" aria-label="Chiudi">✕</button>
+            </div>
+            <form id="sell-form" class="modal-body" novalidate>
+                <input type="hidden" id="sell-id" value="">
+                <p id="sell-product-name" style="margin-bottom: var(--space-md); font-weight: 500; color: var(--text-primary);"></p>
+                <div class="form-group">
+                    <label for="sell-qty">Quantità da vendere</label>
+                    <input type="number" id="sell-qty" required min="1" step="1" value="1">
+                </div>
+                <div class="form-group">
+                    <label for="sell-price">Prezzo di vendita TOTALE (€)</label>
+                    <input type="number" id="sell-price" required min="0" step="0.01" placeholder="0.00">
+                </div>
+                <div class="form-actions" style="margin-top: var(--space-md);">
+                    <button type="submit" class="btn btn-primary" id="sell-confirm-btn" style="background-color: var(--color-success);">💸 Conferma Vendita</button>
+                    <button type="button" class="btn btn-outline" id="sell-cancel-btn">Annulla</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- ═══════════ EDIT TXN MODAL ═══════════ -->
+    <div class="modal-overlay" id="edit-txn-modal-overlay">
+        <div class="modal card-glass" id="edit-txn-modal">
+            <div class="modal-header">
+                <h3>Modifica Operazione</h3>
+                <button class="modal-close" id="edit-txn-modal-close" aria-label="Chiudi">✕</button>
+            </div>
+            <form id="edit-txn-form" class="modal-body" novalidate>
+                <input type="hidden" id="edit-txn-id" value="">
+                <div class="balance-form-grid" style="grid-template-columns: 1fr;">
+                    <div class="form-group">
+                        <label for="edit-txn-type">Tipo</label>
+                        <select id="edit-txn-type" required>
+                            <option value="income">📈 Entrata</option>
+                            <option value="expense">📉 Uscita</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-txn-amount">Importo (€)</label>
+                        <input type="number" id="edit-txn-amount" required min="0.01" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-txn-description">Descrizione</label>
+                        <input type="text" id="edit-txn-description" required autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-txn-date">Data</label>
+                        <input type="date" id="edit-txn-date" required>
+                    </div>
+                </div>
+                <div class="form-actions" style="margin-top: var(--space-md);">
+                    <button type="submit" class="btn btn-primary">💾 Salva</button>
+                    <button type="button" class="btn btn-outline" id="edit-txn-cancel-btn">Annulla</button>
+                </div>
+            </form>
         </div>
     </div>
 

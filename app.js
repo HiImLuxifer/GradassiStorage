@@ -27,6 +27,7 @@ db.enablePersistence({ synchronizeTabs: true }).catch(err => {
 });
 
 const PRODUCTS_COLLECTION = 'products';
+const TRANSACTIONS_COLLECTION = 'transactions';
 
 // ─── App Configuration ───
 const CONFIG = {
@@ -90,6 +91,9 @@ function getConditionInfo(value) {
 class PokeVault {
     constructor() {
         this.products = [];
+        this.transactions = [];
+        this.balancePage = 1;
+        this.balanceItemsPerPage = 10;
         this.currentSection = 'dashboard';
         this.editingId = null;
         this.deleteId = null;
@@ -103,8 +107,10 @@ class PokeVault {
     init() {
         this.populateSelects();
         this.bindEvents();
+        this.bindBalanceEvents();
         this.initAutocomplete();
         this.setupFirestoreListener();
+        this.setupBalanceListener();
         
         // Preload images data
         getLocalPrices().then(data => {
@@ -238,6 +244,17 @@ class PokeVault {
         // Close edit modal on overlay click
         document.getElementById('edit-modal-overlay')?.addEventListener('click', (e) => {
             if (e.target === e.currentTarget) this.closeEditModal();
+        });
+
+        // Sell Modal
+        document.getElementById('sell-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleSellProduct();
+        });
+        document.getElementById('sell-modal-close')?.addEventListener('click', () => this.closeSellModal());
+        document.getElementById('sell-cancel-btn')?.addEventListener('click', () => this.closeSellModal());
+        document.getElementById('sell-modal-overlay')?.addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) this.closeSellModal();
         });
 
         // Delete Confirm Modal
@@ -498,9 +515,9 @@ class PokeVault {
     // ── Navigation ──
     navigateTo(section) {
         // Auth guard for protected sections
-        const protectedSections = ['wizard-sets', 'wizard-sealed', 'add-product'];
+        const protectedSections = ['wizard-sets', 'wizard-sealed', 'add-product', 'balance'];
         if (protectedSections.includes(section) && typeof authManager !== 'undefined' && !authManager.isLoggedIn()) {
-            authManager.requireAuth('aggiungere prodotti');
+            authManager.requireAuth('accedere a questa sezione');
             return;
         }
 
@@ -528,6 +545,7 @@ class PokeVault {
             case 'inventory': this.renderInventory(); break;
             case 'add-product': this.resetForm(); break;
             case 'stats': this.renderStats(); break;
+            case 'balance': this.renderBalance(); break;
             case 'wizard-sets': this.renderWizardSets(); break;
             case 'wizard-sealed': /* Managed via programmatic navigation */ break;
         }
@@ -867,6 +885,7 @@ class PokeVault {
                             <button class="qty-btn" onclick="app.adjustQty('${p.id}', 1)" title="Aggiungi 1">+</button>
                         </div>
                         <div class="product-actions">
+                            <button class="btn-icon" style="color:var(--color-success)" onclick="app.openSellModal('${p.id}')" title="Vendi">💸</button>
                             <button class="btn-icon" onclick="app.openEditModal('${p.id}')" title="Modifica">✏️</button>
                             <button class="btn-icon danger" onclick="app.openDeleteConfirmDirect('${p.id}')" title="Elimina">🗑️</button>
                         </div>
@@ -1288,6 +1307,326 @@ class PokeVault {
     /** Check if user is currently logged in (safe check) */
     isUserLoggedIn() {
         return typeof authManager !== 'undefined' && authManager.isLoggedIn();
+    }
+
+    // ══════════════════════════════════════════════
+    // BALANCE (Gestione Saldo)
+    // ══════════════════════════════════════════════
+
+    setupBalanceListener() {
+        db.collection(TRANSACTIONS_COLLECTION)
+            .orderBy('date', 'desc')
+            .orderBy('createdAt', 'desc')
+            .onSnapshot(snapshot => {
+                this.transactions = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                if (this.currentSection === 'balance') {
+                    this.renderBalance();
+                }
+            }, error => {
+                console.error('Balance listener error:', error);
+            });
+    }
+
+    bindBalanceEvents() {
+        document.getElementById('balance-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleAddTransaction();
+        });
+        
+        // Set today as default date for the form
+        const dateInput = document.getElementById('txn-date');
+        if (dateInput) {
+            dateInput.value = new Date().toISOString().split('T')[0];
+        }
+
+        // Edit Txn Modal
+        document.getElementById('edit-txn-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleEditTransaction();
+        });
+        document.getElementById('edit-txn-modal-close')?.addEventListener('click', () => this.closeEditTxnModal());
+        document.getElementById('edit-txn-cancel-btn')?.addEventListener('click', () => this.closeEditTxnModal());
+        document.getElementById('edit-txn-modal-overlay')?.addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) this.closeEditTxnModal();
+        });
+    }
+
+    renderBalance() {
+        const totalIncome = this.transactions
+            .filter(t => t.type === 'income')
+            .reduce((sum, t) => sum + t.amount, 0);
+        
+        const totalExpense = this.transactions
+            .filter(t => t.type === 'expense')
+            .reduce((sum, t) => sum + t.amount, 0);
+        
+        const currentBalance = totalIncome - totalExpense;
+
+        document.getElementById('balance-total').textContent = formatCurrency(currentBalance);
+        document.getElementById('balance-income').textContent = formatCurrency(totalIncome);
+        document.getElementById('balance-expense').textContent = formatCurrency(totalExpense);
+
+        const incomeCount = this.transactions.filter(t => t.type === 'income').length;
+        const expenseCount = this.transactions.filter(t => t.type === 'expense').length;
+        
+        document.getElementById('balance-total-sub').textContent = `${this.transactions.length} operazioni`;
+        document.getElementById('balance-income-sub').textContent = `${incomeCount} operazioni`;
+        document.getElementById('balance-expense-sub').textContent = `${expenseCount} operazioni`;
+
+        const historyList = document.getElementById('balance-history-list');
+        if (this.transactions.length === 0) {
+            historyList.innerHTML = `
+                <div class="balance-empty-state">
+                    <div class="balance-empty-icon">💸</div>
+                    <p>Nessuna operazione registrata</p>
+                </div>
+            `;
+            return;
+        }
+
+        const totalPages = Math.ceil(this.transactions.length / this.balanceItemsPerPage);
+        if (this.balancePage > totalPages && totalPages > 0) this.balancePage = totalPages;
+        if (this.balancePage < 1) this.balancePage = 1;
+
+        const start = (this.balancePage - 1) * this.balanceItemsPerPage;
+        const visibleTxns = this.transactions.slice(start, start + this.balanceItemsPerPage);
+
+        let html = visibleTxns.map((t, i) => {
+            const isIncome = t.type === 'income';
+            const icon = isIncome ? '🟢' : '🔴';
+            const sign = isIncome ? '+' : '-';
+            const cssClass = isIncome ? 'income' : 'expense';
+            
+            return `
+                <div class="balance-history-item" style="animation-delay:${i * 0.05}s">
+                    <div class="txn-icon ${cssClass}">${icon}</div>
+                    <div class="txn-details">
+                        <div class="txn-desc">${this.escapeHtml(t.description)}</div>
+                        <div class="txn-date">${formatDate(t.date)}</div>
+                    </div>
+                    <div class="txn-amount ${cssClass}">${sign}${formatCurrency(t.amount)}</div>
+                    <div class="txn-actions">
+                        <button type="button" class="btn-icon" onclick="app.openEditTxnModal('${t.id}')" title="Modifica">✏️</button>
+                        <button type="button" class="btn-icon danger" onclick="app.deleteTransaction('${t.id}')" title="Elimina">🗑️</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        if (totalPages > 1) {
+            html += `
+                <div class="pagination-controls">
+                    <button class="pagination-btn" onclick="app.changeBalancePage(-1)" ${this.balancePage === 1 ? 'disabled' : ''}>← Precedente</button>
+                    <span class="pagination-info">Pagina ${this.balancePage} di ${totalPages}</span>
+                    <button class="pagination-btn" onclick="app.changeBalancePage(1)" ${this.balancePage === totalPages ? 'disabled' : ''}>Successiva →</button>
+                </div>
+            `;
+        }
+
+        historyList.innerHTML = html;
+    }
+
+    changeBalancePage(delta) {
+        const totalPages = Math.ceil(this.transactions.length / this.balanceItemsPerPage);
+        let newPage = this.balancePage + delta;
+        if (newPage < 1) newPage = 1;
+        if (newPage > totalPages) newPage = totalPages;
+        
+        if (newPage !== this.balancePage) {
+            this.balancePage = newPage;
+            this.renderBalance();
+        }
+    }
+
+    async handleAddTransaction() {
+        if (typeof authManager !== 'undefined' && !authManager.requireAuth('aggiungere operazioni')) return;
+        
+        const type = document.getElementById('txn-type').value;
+        const amount = parseFloat(document.getElementById('txn-amount').value);
+        const description = document.getElementById('txn-description').value.trim();
+        const date = document.getElementById('txn-date').value;
+
+        if (!type || isNaN(amount) || amount <= 0 || !description || !date) {
+            this.toast('error', '❌', 'Compila correttamente tutti i campi');
+            return;
+        }
+
+        const txnData = {
+            type,
+            amount,
+            description,
+            date,
+            createdAt: new Date().toISOString()
+        };
+
+        try {
+            await db.collection(TRANSACTIONS_COLLECTION).add(txnData);
+            document.getElementById('balance-form').reset();
+            
+            // Set today's date as default again
+            document.getElementById('txn-date').value = new Date().toISOString().split('T')[0];
+            
+            this.toast('success', '✅', 'Operazione aggiunta');
+        } catch (error) {
+            console.error('Error adding transaction:', error);
+            this.toast('error', '❌', 'Errore nel salvataggio');
+        }
+    }
+
+    async deleteTransaction(id) {
+        if (typeof authManager !== 'undefined' && !authManager.requireAuth('eliminare operazioni')) return;
+        
+        if (!confirm('Sei sicuro di voler eliminare questa operazione?')) return;
+
+        try {
+            await db.collection(TRANSACTIONS_COLLECTION).doc(id).delete();
+            this.toast('warning', '🗑️', 'Operazione eliminata');
+        } catch (error) {
+            console.error('Error deleting transaction:', error);
+            this.toast('error', '❌', 'Errore durante l\'eliminazione');
+        }
+    }
+
+    openEditTxnModal(id) {
+        if (typeof authManager !== 'undefined' && !authManager.requireAuth('modificare operazioni')) return;
+        
+        const txn = this.transactions.find(t => t.id === id);
+        if (!txn) return;
+
+        document.getElementById('edit-txn-id').value = id;
+        document.getElementById('edit-txn-type').value = txn.type;
+        document.getElementById('edit-txn-amount').value = txn.amount;
+        document.getElementById('edit-txn-description').value = txn.description;
+        document.getElementById('edit-txn-date').value = txn.date;
+
+        document.getElementById('edit-txn-modal-overlay').classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    closeEditTxnModal() {
+        document.getElementById('edit-txn-modal-overlay')?.classList.remove('open');
+        if (!document.getElementById('sell-modal-overlay')?.classList.contains('open') &&
+            !document.getElementById('edit-modal-overlay')?.classList.contains('open') && 
+            !document.getElementById('delete-modal-overlay')?.classList.contains('open')) {
+            document.body.style.overflow = '';
+        }
+    }
+
+    async handleEditTransaction() {
+        if (typeof authManager !== 'undefined' && !authManager.requireAuth('modificare operazioni')) return;
+        
+        const id = document.getElementById('edit-txn-id').value;
+        const type = document.getElementById('edit-txn-type').value;
+        const amount = parseFloat(document.getElementById('edit-txn-amount').value);
+        const description = document.getElementById('edit-txn-description').value.trim();
+        const date = document.getElementById('edit-txn-date').value;
+
+        if (!id || !type || isNaN(amount) || amount <= 0 || !description || !date) {
+            this.toast('error', '❌', 'Compila correttamente tutti i campi');
+            return;
+        }
+
+        try {
+            await db.collection(TRANSACTIONS_COLLECTION).doc(id).update({
+                type,
+                amount,
+                description,
+                date,
+                updatedAt: new Date().toISOString()
+            });
+            this.closeEditTxnModal();
+            this.toast('success', '💾', 'Operazione aggiornata');
+        } catch (error) {
+            console.error('Error updating transaction:', error);
+            this.toast('error', '❌', 'Errore durante l\'aggiornamento');
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // SELL PRODUCT (Vendi dall'inventario)
+    // ══════════════════════════════════════════════
+    
+    openSellModal(id) {
+        if (typeof authManager !== 'undefined' && !authManager.requireAuth('vendere prodotti')) return;
+        
+        const product = this.products.find(p => p.id === id);
+        if (!product) return;
+
+        document.getElementById('sell-id').value = id;
+        document.getElementById('sell-product-name').textContent = product.name + (product.expansion ? ` (${product.expansion})` : '');
+        
+        const qtyInput = document.getElementById('sell-qty');
+        qtyInput.value = 1;
+        qtyInput.max = product.quantity;
+        
+        document.getElementById('sell-price').value = '';
+
+        document.getElementById('sell-modal-overlay').classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    closeSellModal() {
+        document.getElementById('sell-modal-overlay')?.classList.remove('open');
+        if (!document.getElementById('edit-modal-overlay')?.classList.contains('open') && 
+            !document.getElementById('delete-modal-overlay')?.classList.contains('open')) {
+            document.body.style.overflow = '';
+        }
+    }
+
+    async handleSellProduct() {
+        if (typeof authManager !== 'undefined' && !authManager.requireAuth('vendere prodotti')) return;
+        
+        const id = document.getElementById('sell-id').value;
+        const sellQty = parseInt(document.getElementById('sell-qty').value, 10);
+        const sellPrice = parseFloat(document.getElementById('sell-price').value);
+
+        if (!id || isNaN(sellQty) || sellQty <= 0 || isNaN(sellPrice) || sellPrice < 0) {
+            this.toast('error', '❌', 'Compila tutti i campi correttamente');
+            return;
+        }
+
+        const product = this.products.find(p => p.id === id);
+        if (!product) return;
+
+        if (sellQty > product.quantity) {
+            this.toast('error', '❌', 'Quantità da vendere superiore alla giacenza');
+            return;
+        }
+
+        try {
+            // 1. Aggiorna o elimina il prodotto
+            const newQty = product.quantity - sellQty;
+            if (newQty === 0) {
+                await db.collection(PRODUCTS_COLLECTION).doc(id).delete();
+            } else {
+                await db.collection(PRODUCTS_COLLECTION).doc(id).update({
+                    quantity: newQty,
+                    updatedAt: new Date().toISOString()
+                });
+            }
+
+            // 2. Crea la transazione (Entrata) se il prezzo > 0
+            if (sellPrice > 0) {
+                const txnData = {
+                    type: 'income',
+                    amount: sellPrice,
+                    description: `Vendita: ${product.name} x${sellQty}`,
+                    date: new Date().toISOString().split('T')[0], // data di oggi
+                    createdAt: new Date().toISOString()
+                };
+                await db.collection(TRANSACTIONS_COLLECTION).add(txnData);
+            }
+
+            this.closeSellModal();
+            this.toast('success', '💸', `Prodotto venduto con successo!`);
+            
+        } catch (error) {
+            console.error('Error selling product:', error);
+            this.toast('error', '❌', 'Errore durante la vendita. Riprova.');
+        }
     }
 }
 
