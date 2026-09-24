@@ -26,8 +26,8 @@ db.enablePersistence({ synchronizeTabs: true }).catch(err => {
     }
 });
 
-const PRODUCTS_COLLECTION = 'products';
-const TRANSACTIONS_COLLECTION = 'transactions';
+let PRODUCTS_COLLECTION = 'products';
+let TRANSACTIONS_COLLECTION = 'transactions';
 
 // ─── App Configuration ───
 const CONFIG = {
@@ -123,7 +123,8 @@ class PokeVault {
 
     // ── Firestore Real-time Listener ──
     setupFirestoreListener() {
-        db.collection(PRODUCTS_COLLECTION)
+        if (this._productsUnsubscribe) this._productsUnsubscribe();
+        this._productsUnsubscribe = db.collection(PRODUCTS_COLLECTION)
             .orderBy('createdAt', 'desc')
             .onSnapshot(snapshot => {
                 this.products = snapshot.docs.map(doc => ({
@@ -1314,7 +1315,8 @@ class PokeVault {
     // ══════════════════════════════════════════════
 
     setupBalanceListener() {
-        db.collection(TRANSACTIONS_COLLECTION)
+        if (this._transactionsUnsubscribe) this._transactionsUnsubscribe();
+        this._transactionsUnsubscribe = db.collection(TRANSACTIONS_COLLECTION)
             .orderBy('date', 'desc')
             .orderBy('createdAt', 'desc')
             .onSnapshot(snapshot => {
@@ -1640,7 +1642,22 @@ document.addEventListener('DOMContentLoaded', () => {
     app = new PokeVault();
 
     // Re-render inventory when auth state changes (to show/hide edit buttons)
-    authManager.onAuthChanged(() => {
+    authManager.onAuthChanged((user) => {
+        const email = user ? user.email : null;
+        if (email === 'asd@gmail.com') {
+            PRODUCTS_COLLECTION = 'products_asd';
+            TRANSACTIONS_COLLECTION = 'transactions_asd';
+        } else {
+            PRODUCTS_COLLECTION = 'products';
+            TRANSACTIONS_COLLECTION = 'transactions';
+        }
+        
+        // Riavvia i listener per agganciare le nuove collezioni (svuota anche localmente finché non carica)
+        app.products = [];
+        app.transactions = [];
+        app.setupFirestoreListener();
+        app.setupBalanceListener();
+
         if (app.currentSection === 'inventory') {
             app.renderInventory();
         }
